@@ -1,0 +1,14 @@
+node_modules/
+data/
+bin/
+*.tgz
+debug.json
+*.log
+run-*.sh
+run3.sh
+start.sh
+stat.sh
+v.sh
+setup-sandbox.sh
+check-yaml.py
+debug.json
