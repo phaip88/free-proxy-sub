@@ -7,6 +7,7 @@ import {
   SPEED_LIMIT,
 } from './config.js';
 import { extractLinks, parseLink } from './parse.js';
+import { classifyIps } from './ipinfo.js';
 
 const BATCH = 40;
 
@@ -84,6 +85,41 @@ export class Refresher {
     return picked;
   }
 
+  async classifyBatch(batch, results) {
+    const cache = (this.store.state.ipcache ||= {});
+    const pending = [];
+    results.forEach((r, idx) => {
+      if (!r || !r.ok || !r.exitIp) return;
+      const node = this.store.state.nodes[batch[idx].fp];
+      if (!node) return;
+      const hit = cache[r.exitIp];
+      if (hit) {
+        Object.assign(node, hit, { residential: hit.residential });
+        node.exitIp = r.exitIp;
+      } else if (!pending.includes(r.exitIp)) {
+        pending.push(r.exitIp);
+      }
+    });
+    if (!pending.length) return;
+    const info = await classifyIps(pending);
+    for (const [ip, data] of info) {
+      cache[ip] = {
+        isp: data.isp,
+        asn: data.asn,
+        hosting: data.hosting,
+        mobile: data.mobile,
+        residential: data.residential,
+      };
+    }
+    const keys = Object.keys(cache);
+    if (keys.length > 3000) for (const k of keys.slice(0, keys.length - 3000)) delete cache[k];
+    results.forEach((r, idx) => {
+      if (!r || !r.ok || !r.exitIp || !cache[r.exitIp]) return;
+      const node = this.store.state.nodes[batch[idx].fp];
+      if (node) Object.assign(node, cache[r.exitIp], { exitIp: r.exitIp, residential: cache[r.exitIp].residential });
+    });
+  }
+
   async refresh() {
     if (this.running) return { skipped: true };
     this.running = true;
@@ -106,7 +142,7 @@ export class Refresher {
             concurrency: TEST_CONCURRENCY,
             timeout: TEST_TIMEOUT_MS,
             speed: SPEED_TEST,
-            speedLimit: Math.min(SPEED_LIMIT, batch.length),
+            speedLimit: batch.length,
           });
         } catch (e) {
           results = batch.map(() => ({ ok: false, error: e.message }));
@@ -117,6 +153,7 @@ export class Refresher {
           if (r && r.ok) summary.alive += 1;
           else summary.failed += 1;
         });
+        await this.classifyBatch(batch, results);
         this.store.save();
       }
       this.store.prune();
@@ -138,3 +175,4 @@ export class Refresher {
     }
   }
 }
+

@@ -156,6 +156,40 @@ export async function speedViaSocks(proxyPort, timeout) {
   return Math.round((bytes * 8) / secs / 1000);
 }
 
+function readAll(sock, timeout) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    const timer = setTimeout(() => {
+      sock.destroy();
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    }, timeout);
+    sock.on('data', (c) => chunks.push(c));
+    sock.once('end', () => {
+      clearTimeout(timer);
+      resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+    sock.once('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+  });
+}
+
+export async function exitProbe(proxyPort, timeout) {
+  const sock = await socks5Connect(proxyPort, 'www.cloudflare.com', 443, timeout);
+  const t = await tlsHandshake(sock, 'www.cloudflare.com', timeout);
+  t.write(
+    'GET /cdn-cgi/trace HTTP/1.1\r\nHost: www.cloudflare.com\r\nUser-Agent: Mozilla/5.0\r\nAccept: */*\r\nConnection: close\r\n\r\n'
+  );
+  const raw = await readAll(t, timeout);
+  const idx = raw.indexOf('\r\n\r\n');
+  const body = idx >= 0 ? raw.slice(idx + 4) : raw;
+  const ip = (body.match(/^ip=(\S+)/m) || [])[1];
+  const loc = (body.match(/^loc=(\S+)/m) || [])[1] || '';
+  if (!ip) throw new Error('no exit ip');
+  return { ip, loc };
+}
+
 async function waitListening(port, deadline) {
   while (Date.now() < deadline) {
     const ok = await new Promise((resolve) => {
@@ -246,6 +280,22 @@ export class Tester {
         }
       };
       await Promise.all(Array.from({ length: Math.min(concurrency, nodes.length) }, worker));
+      const aliveIdx = results.map((r, i) => (r && r.ok ? i : -1)).filter((i) => i >= 0);
+      let exitCursor = 0;
+      const exitWorker = async () => {
+        while (exitCursor < aliveIdx.length) {
+          const i = aliveIdx[exitCursor++];
+          try {
+            const info = await exitProbe(ports[i], timeout);
+            results[i].exitIp = info.ip;
+            results[i].loc = info.loc;
+          } catch {
+            results[i].ok = false;
+            results[i].error = 'exit probe failed';
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(concurrency, Math.max(1, aliveIdx.length)) }, exitWorker));
       if (speed) {
         const alive = results
           .map((r, i) => ({ r, i }))
@@ -270,4 +320,6 @@ export class Tester {
     }
   }
 }
+
+
 

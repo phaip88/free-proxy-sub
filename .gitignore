@@ -12,3 +12,6 @@ v.sh
 setup-sandbox.sh
 check-yaml.py
 debug.json
+patch-*.js
+sb-*.sh
+verify-sub.js

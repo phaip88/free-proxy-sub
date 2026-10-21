@@ -50,9 +50,13 @@ export class Store {
       n.speed = result.speed || 0;
       n.lastOk = Date.now();
       n.fails = 0;
+      n.streak = (n.streak || 0) + 1;
+      if (result.exitIp) n.exitIp = result.exitIp;
+      if (result.loc) n.loc = result.loc;
     } else {
       n.ok = false;
       n.fails = (n.fails || 0) + 1;
+      n.streak = 0;
       n.error = String(result.error || '').slice(0, 120);
     }
   }
@@ -69,3 +73,4 @@ export class Store {
     return Object.values(this.state.nodes).filter((n) => n.ok);
   }
 }
+

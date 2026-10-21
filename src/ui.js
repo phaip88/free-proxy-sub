@@ -4,12 +4,20 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+function kind(n) {
+  if (n.residential === true) return `家宽 ${n.isp || ''}`.trim();
+  if (n.hosting === true) return `机房 ${n.isp || ''}`.trim();
+  return n.isp || '未知';
+}
+
 export function renderPage({ nodes, total, state, running, lastRun }) {
   const updated = state.updatedAt ? new Date(state.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '-';
+  const home = nodes.filter((n) => n.residential === true).length;
   const rows = nodes
     .slice(0, 100)
     .map(
-      (n, i) => `<tr><td>${i + 1}</td><td>${esc(n.proto)}</td><td>${esc(n.server)}:${n.port}</td><td>${n.latency || '-'}</td><td>${n.speed || '-'}</td><td>${esc(n.name)}</td></tr>`
+      (n, i) =>
+        `<tr><td>${i + 1}</td><td>${esc(n.proto)}</td><td>${esc(n.server)}:${n.port}</td><td>${n.latency || '-'}</td><td>${n.speed || '-'}</td><td>${esc(kind(n))}</td><td>${esc(n.name)}</td></tr>`
     )
     .join('');
   const run = lastRun ? `<pre>${esc(JSON.stringify(lastRun, null, 2))}</pre>` : '';
@@ -29,13 +37,13 @@ pre{background:#0b0d11;padding:10px;border-radius:6px;overflow:auto;font-size:12
 </style></head><body>
 <h1>free-proxy-sub</h1>
 <div class="card">
-<div><span class="k">可用节点</span> <b>${nodes.length}</b> / 池 <b>${total}</b> · <span class="k">更新</span> ${esc(updated)} · <span class="k">测速中</span> ${running ? '是' : '否'}</div>
+<div><span class="k">可用节点</span> <b>${nodes.length}</b>（家宽 <b>${home}</b>）/ 池 <b>${total}</b> · <span class="k">更新</span> ${esc(updated)} · <span class="k">测速中</span> ${running ? '是' : '否'}</div>
 <div style="margin-top:10px"><span class="k">订阅(通用 base64)</span><br><code>/sub</code></div>
 <div style="margin-top:6px"><span class="k">Clash / Mihomo</span><br><code>/clash</code></div>
 <div style="margin-top:6px"><span class="k">明文链接</span><br><code>/sub/plain</code></div>
 </div>
 <div class="card">
-<table><thead><tr><th>#</th><th>协议</th><th>地址</th><th>延迟 ms</th><th>速率 kbps</th><th>名称</th></tr></thead><tbody>${rows || '<tr><td colspan="6">暂无数据，首次测速进行中</td></tr>'}</tbody></table>
+<table><thead><tr><th>#</th><th>协议</th><th>地址</th><th>延迟 ms</th><th>速率 kbps</th><th>网络类型</th><th>名称</th></tr></thead><tbody>${rows || '<tr><td colspan="7">暂无数据，首次测速进行中</td></tr>'}</tbody></table>
 </div>
 ${run}
 </body></html>`;

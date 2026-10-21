@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { PORT, DATA_DIR, SINGBOX_BIN, REFRESH_MINUTES, MAX_OUTPUT, SUB_TOKEN, SUB_TITLE } from './config.js';
+import { PORT, DATA_DIR, SINGBOX_BIN, REFRESH_MINUTES, MAX_OUTPUT, SUB_TOKEN, SUB_TITLE, SPEED_TEST, MIN_SPEED_KBPS, MAX_LATENCY_MS } from './config.js';
 import { Store } from './store.js';
 import { Tester } from './test.js';
 import { Refresher } from './refresh.js';
@@ -15,7 +15,14 @@ const refresher = new Refresher(store, tester);
 function ranked() {
   return store
     .alive()
-    .sort((a, b) => (b.speed || 0) - (a.speed || 0) || (a.latency || 9999) - (b.latency || 9999));
+    .filter((n) => (n.latency || 9999) <= MAX_LATENCY_MS)
+    .filter((n) => !SPEED_TEST || (n.speed || 0) >= MIN_SPEED_KBPS)
+    .sort(
+      (a, b) =>
+        Number(!!b.residential) - Number(!!a.residential) ||
+        (b.speed || 0) - (a.speed || 0) ||
+        (a.latency || 9999) - (b.latency || 9999)
+    );
 }
 
 function authorized(req, url) {
@@ -112,6 +119,7 @@ server.listen(PORT, '0.0.0.0', () => {
   }
   setInterval(() => refresher.refresh().then((s) => console.log('[refresh]', JSON.stringify(s))).catch((e) => console.error('[refresh]', e.message)), REFRESH_MINUTES * 60000);
 });
+
 
 
 

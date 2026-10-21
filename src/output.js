@@ -8,12 +8,19 @@ function clean(name) {
   return String(name || 'node').replace(/[",\n\r]/g, ' ').slice(0, 60).trim() || 'node';
 }
 
+function kindTag(node) {
+  if (node.residential === true) return '🏠';
+  if (node.hosting === true) return '☁';
+  return '';
+}
+
 export function label(node) {
   const parts = [];
   if (node.speed > 0) parts.push(`${node.speed}kbps`);
   if (node.latency > 0) parts.push(`${node.latency}ms`);
   const tag = parts.length ? `[${parts.join(' ')}] ` : '';
-  return clean(tag + (node.name || node.server));
+  const kind = kindTag(node);
+  return clean(`${tag}${kind ? `${kind} ` : ''}${node.name || node.server}`);
 }
 
 export function toClash(node) {

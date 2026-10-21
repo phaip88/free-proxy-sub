@@ -7,8 +7,9 @@
 ## 工作方式
 
 1. 拉取订阅源，解析分享链接，按协议+地址+凭据去重。
-2. 每轮取 60% 已存活节点 + 40% 新节点，批量交给 sing-box，每批 40 个独立 SOCKS 入口，直连 `www.gstatic.com/generate_204` 校验，再对存活节点做带宽抽样。
-3. 只保留最近一轮验证成功的节点，连续失败 3 次移出池。
+2. 每轮取 60% 已存活节点 + 40% 新节点，批量交给 sing-box，每批 40 个独立 SOCKS 入口；先用 `www.gstatic.com/generate_204` 校验延迟，再经同一节点请求 `www.cloudflare.com/cdn-cgi/trace` 取真实出口 IP，最后做带宽测试。
+3. 用 ip-api 批量识别出口 IP 的 ISP 与 hosting 标记：`hosting=false` 且 `proxy=false` 记为家宽，节点名带 🏠；机房节点带 ☁；未知不加标记。
+4. 只保留最近一轮验证成功、延迟 ≤ 2500 ms、速率 ≥ 200 kbps 的节点，连续失败 3 次移出池。排序规则：家宽优先，其次速率，最后延迟。
 4. 对外输出 base64 订阅 / Clash YAML，节点名带 `[速率 延迟]` 前缀，按速率排序。
 
 ## 部署
@@ -51,10 +52,12 @@ docker run -d --name free-proxy-sub -p 8080:8080 -v $PWD/data:/data free-proxy-s
 | `SOURCES` | 内置 4 个公开源 | 逗号或换行分隔 |
 | `REFRESH_MINUTES` | `30` | 刷新周期 |
 | `MAX_TEST_PER_CYCLE` | `400` | 每轮测试节点数上限 |
-| `TEST_CONCURRENCY` | `40` | 单批并发 |
+| `TEST_CONCURRENCY` | `16` | 单批并发 |
 | `TEST_TIMEOUT_MS` | `8000` | 单节点超时 |
 | `SPEED_TEST` | `1` | 是否测带宽 |
-| `SPEED_LIMIT` | `60` | 每批测速节点数上限 |
+| `SPEED_LIMIT` | `40` | 每批测速节点数上限（默认整批） |
+| `MIN_SPEED_KBPS` | `200` | 入订阅的最低速率 |
+| `MAX_LATENCY_MS` | `2500` | 入订阅的最高延迟 |
 | `MAX_OUTPUT` | `300` | 订阅最多输出节点数 |
 | `SUB_TOKEN` | 空 | 设置后所有接口需带 `?token=` 或 `X-Sub-Token` |
 
