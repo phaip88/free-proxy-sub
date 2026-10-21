@@ -6,6 +6,7 @@ import { Refresher } from './refresh.js';
 import { toSubscription, toClashYaml, label } from './output.js';
 import { renderPage } from './ui.js';
 import { ensureSingbox } from './bootstrap.js';
+import { reportCapabilities } from './capabilities.js';
 
 const store = new Store(DATA_DIR);
 store.load();
@@ -140,6 +141,7 @@ const server = http.createServer(async (req, res) => {
   return send(res, 404, 'not found');
 });
 
+reportCapabilities();
 await ensureSingbox(SINGBOX_BIN).catch((e) => console.error('[bootstrap]', e.message));
 
 server.listen(PORT, '0.0.0.0', () => {
