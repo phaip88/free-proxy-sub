@@ -10,11 +10,11 @@ export const SINGBOX_BIN = path.resolve(
 );
 
 export const REFRESH_MINUTES = Math.max(5, Number(env.REFRESH_MINUTES || 30));
-export const MAX_TEST_PER_CYCLE = Math.max(20, Number(env.MAX_TEST_PER_CYCLE || 400));
-export const TEST_CONCURRENCY = Math.max(4, Number(env.TEST_CONCURRENCY || 40));
+export const MAX_TEST_PER_CYCLE = Math.max(20, Number(env.MAX_TEST_PER_CYCLE || 200));
+export const TEST_CONCURRENCY = Math.max(4, Number(env.TEST_CONCURRENCY || 16));
 export const TEST_TIMEOUT_MS = Math.max(2000, Number(env.TEST_TIMEOUT_MS || 8000));
 export const SPEED_TEST = (env.SPEED_TEST || '1') !== '0';
-export const SPEED_LIMIT = Math.max(0, Number(env.SPEED_LIMIT || 60));
+export const SPEED_LIMIT = Math.max(0, Number(env.SPEED_LIMIT || 30));
 export const MAX_OUTPUT = Math.max(1, Number(env.MAX_OUTPUT || 300));
 export const SUB_TOKEN = (env.SUB_TOKEN || '').trim();
 export const SUB_TITLE = (env.SUB_TITLE || 'FreeProxy Sub').trim();
@@ -27,3 +27,4 @@ export const DEFAULT_SOURCES = [
 ];
 
 export const SOURCES = (env.SOURCES ? env.SOURCES.split(/[\s,]+/).filter(Boolean) : DEFAULT_SOURCES);
+

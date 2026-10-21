@@ -5,6 +5,7 @@ import { Tester } from './test.js';
 import { Refresher } from './refresh.js';
 import { toSubscription, toClashYaml, label } from './output.js';
 import { renderPage } from './ui.js';
+import { ensureSingbox } from './bootstrap.js';
 
 const store = new Store(DATA_DIR);
 store.load();
@@ -101,14 +102,18 @@ const server = http.createServer(async (req, res) => {
   return send(res, 404, 'not found');
 });
 
+await ensureSingbox(SINGBOX_BIN).catch((e) => console.error('[bootstrap]', e.message));
+
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`[free-proxy-sub] listening on :${PORT}`);
   const age = Date.now() - (store.state.updatedAt || 0);
   if (age > REFRESH_MINUTES * 60000) {
-    setTimeout(() => refresher.refresh().catch((e) => console.error('[refresh]', e.message)), 2000);
+    setTimeout(() => refresher.refresh().then((s) => console.log('[refresh]', JSON.stringify(s))).catch((e) => console.error('[refresh]', e.message)), 2000);
   }
-  setInterval(() => refresher.refresh().catch((e) => console.error('[refresh]', e.message)), REFRESH_MINUTES * 60000);
+  setInterval(() => refresher.refresh().then((s) => console.log('[refresh]', JSON.stringify(s))).catch((e) => console.error('[refresh]', e.message)), REFRESH_MINUTES * 60000);
 });
+
+
 
 
 
