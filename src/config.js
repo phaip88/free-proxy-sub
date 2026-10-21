@@ -3,7 +3,7 @@ import os from 'node:os';
 
 const env = process.env;
 
-export const PORT = Number(env.PORT || 8080);
+export const PORT = Number(env.PORT || env.SERVER_PORT || 8080);
 export const DATA_DIR = path.resolve(env.DATA_DIR || './data');
 export const SINGBOX_BIN = path.resolve(
   env.SINGBOX_BIN || (os.platform() === 'win32' ? './bin/sing-box.exe' : './bin/sing-box')
@@ -27,4 +27,5 @@ export const DEFAULT_SOURCES = [
 ];
 
 export const SOURCES = (env.SOURCES ? env.SOURCES.split(/[\s,]+/).filter(Boolean) : DEFAULT_SOURCES);
+
 
