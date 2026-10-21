@@ -15,3 +15,4 @@ debug.json
 patch-*.js
 sb-*.sh
 verify-sub.js
+sb*.sh
