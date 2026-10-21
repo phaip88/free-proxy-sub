@@ -5,6 +5,7 @@ function esc(s) {
 }
 
 function kind(n) {
+  if (n.mobile === true) return `移动 ${n.isp || ''}`.trim();
   if (n.residential === true) return `家宽 ${n.isp || ''}`.trim();
   if (n.hosting === true) return `机房 ${n.isp || ''}`.trim();
   return n.isp || '未知';
@@ -12,7 +13,7 @@ function kind(n) {
 
 export function renderPage({ nodes, total, state, running, lastRun }) {
   const updated = state.updatedAt ? new Date(state.updatedAt).toLocaleString('zh-CN', { hour12: false }) : '-';
-  const home = nodes.filter((n) => n.residential === true).length;
+  const home = nodes.filter((n) => n.residential === true || n.mobile === true).length;
   const rows = nodes
     .slice(0, 100)
     .map(

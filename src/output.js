@@ -9,6 +9,7 @@ function clean(name) {
 }
 
 function kindTag(node) {
+  if (node.mobile === true) return '📱';
   if (node.residential === true) return '🏠';
   if (node.hosting === true) return '☁';
   return '';

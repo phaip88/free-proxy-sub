@@ -39,6 +39,7 @@ docker run -d --name free-proxy-sub -p 8080:8080 -v $PWD/data:/data free-proxy-s
 | v2rayN / v2rayNG / Shadowrocket | `https://你的域名/sub` |
 | Clash / Mihomo | `https://你的域名/clash` |
 | 通用（带 target 参数） | `https://你的域名/sub?target=clash` |
+| 全部节点（含机房） | `https://你的域名/sub/all` |
 | 明文查看 | `https://你的域名/sub/plain` |
 
 订阅每 30 分钟自动更新，客户端按 `Profile-Update-Interval` 拉取。
@@ -51,14 +52,18 @@ docker run -d --name free-proxy-sub -p 8080:8080 -v $PWD/data:/data free-proxy-s
 | `DATA_DIR` | `./data` | 状态目录 |
 | `SOURCES` | 内置 4 个公开源 | 逗号或换行分隔 |
 | `REFRESH_MINUTES` | `30` | 刷新周期 |
-| `MAX_TEST_PER_CYCLE` | `400` | 每轮测试节点数上限 |
+| `MAX_TEST_PER_CYCLE` | `300` | 每轮测试节点数上限 |
 | `TEST_CONCURRENCY` | `16` | 单批并发 |
 | `TEST_TIMEOUT_MS` | `8000` | 单节点超时 |
 | `SPEED_TEST` | `1` | 是否测带宽 |
 | `SPEED_LIMIT` | `40` | 每批测速节点数上限（默认整批） |
 | `MIN_SPEED_KBPS` | `800` | 入订阅的最低速率 |
 | `MAX_LATENCY_MS` | `1500` | 入订阅的最高延迟 |
-| `MIN_STREAK` | `2` | 需连续通过测速的轮数 |
+| `MIN_STREAK` | `2` | 机房节点需连续通过测速的轮数 |
+| `MIN_SPEED_HOME` | `300` | 家宽/移动节点最低速率 |
+| `MAX_LATENCY_HOME` | `2500` | 家宽/移动节点最高延迟 |
+| `MIN_STREAK_HOME` | `1` | 家宽/移动节点需连续通过的轮数 |
+| `RESIDENTIAL_ONLY` | `1` | 订阅只输出家宽/移动，为空时自动回退混合列表 |
 | `MAX_OUTPUT` | `300` | 订阅最多输出节点数 |
 | `SUB_TOKEN` | 空 | 设置后所有接口需带 `?token=` 或 `X-Sub-Token` |
 

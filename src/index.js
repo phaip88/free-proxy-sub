@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { PORT, DATA_DIR, SINGBOX_BIN, REFRESH_MINUTES, MAX_OUTPUT, SUB_TOKEN, SUB_TITLE, SPEED_TEST, MIN_SPEED_KBPS, MAX_LATENCY_MS, MIN_STREAK } from './config.js';
+import { PORT, DATA_DIR, SINGBOX_BIN, REFRESH_MINUTES, MAX_OUTPUT, SUB_TOKEN, SUB_TITLE, SPEED_TEST, MIN_SPEED_KBPS, MAX_LATENCY_MS, MIN_STREAK, MIN_SPEED_HOME, MAX_LATENCY_HOME, MIN_STREAK_HOME, RESIDENTIAL_ONLY } from './config.js';
 import { Store } from './store.js';
 import { Tester } from './test.js';
 import { Refresher } from './refresh.js';
@@ -12,18 +12,41 @@ store.load();
 const tester = new Tester(SINGBOX_BIN, DATA_DIR);
 const refresher = new Refresher(store, tester);
 
+function isHome(n) {
+  return n.residential === true || n.mobile === true;
+}
+
+function eligible(n) {
+  const home = isHome(n);
+  const minSpeed = home ? MIN_SPEED_HOME : MIN_SPEED_KBPS;
+  const maxLatency = home ? MAX_LATENCY_HOME : MAX_LATENCY_MS;
+  const minStreak = home ? MIN_STREAK_HOME : MIN_STREAK;
+  if ((n.latency || 9999) > maxLatency) return false;
+  if (SPEED_TEST && (n.speed || 0) < minSpeed) return false;
+  if ((n.streak || 0) < minStreak) return false;
+  return true;
+}
+
 function ranked() {
   return store
     .alive()
-    .filter((n) => (n.latency || 9999) <= MAX_LATENCY_MS)
-    .filter((n) => !SPEED_TEST || (n.speed || 0) >= MIN_SPEED_KBPS)
-    .filter((n) => (n.streak || 0) >= MIN_STREAK)
+    .filter(eligible)
     .sort(
       (a, b) =>
-        Number(!!b.residential) - Number(!!a.residential) ||
+        Number(isHome(b)) - Number(isHome(a)) ||
         (b.speed || 0) - (a.speed || 0) ||
         (a.latency || 9999) - (b.latency || 9999)
     );
+}
+
+function residential() {
+  return ranked().filter(isHome);
+}
+
+function selectNodes() {
+  const home = residential();
+  if (RESIDENTIAL_ONLY && home.length) return home;
+  return ranked();
 }
 
 function authorized(req, url) {
@@ -65,13 +88,20 @@ const server = http.createServer(async (req, res) => {
   }
 
   const limit = Math.min(MAX_OUTPUT, Math.max(1, Number(url.searchParams.get('limit')) || MAX_OUTPUT));
-  const nodes = ranked().slice(0, limit);
+  const nodes = selectNodes().slice(0, limit);
+  const allNodes = ranked().slice(0, limit);
 
   if (p === '/sub' || p === '/sub/base64' || p === '/base64') {
     if ((url.searchParams.get('target') || '').toLowerCase() === 'clash') {
       return send(res, 200, toClashYaml(nodes), { ...subHeaders(), 'Content-Type': 'text/yaml; charset=utf-8' });
     }
     return send(res, 200, toSubscription(nodes), subHeaders());
+  }
+  if (p === '/sub/all') {
+    return send(res, 200, toSubscription(allNodes), subHeaders());
+  }
+  if (p === '/sub/all/plain') {
+    return send(res, 200, `${allNodes.map((n) => n.link).join('\n')}\n`, subHeaders());
   }
   if (p === '/sub/plain' || p === '/nodes.txt' || p === '/sub.txt') {
     return send(res, 200, nodes.map((n) => n.link).join('\n') + '\n', subHeaders());
