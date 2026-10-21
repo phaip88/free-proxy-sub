@@ -8,6 +8,7 @@ import {
 } from './config.js';
 import { extractLinks, parseLink } from './parse.js';
 import { classifyIps } from './ipinfo.js';
+import { isCdnFront } from './filters.js';
 
 const BATCH = 40;
 
@@ -50,6 +51,7 @@ export class Refresher {
     for (const link of links) {
       const node = parseLink(link);
       if (!node || seen.has(node.fp)) continue;
+      if (isCdnFront(node.server)) continue;
       seen.add(node.fp);
       nodes.push(node);
     }

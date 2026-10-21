@@ -1,5 +1,5 @@
 import http from 'node:http';
-import { PORT, DATA_DIR, SINGBOX_BIN, REFRESH_MINUTES, MAX_OUTPUT, SUB_TOKEN, SUB_TITLE, SPEED_TEST, MIN_SPEED_KBPS, MAX_LATENCY_MS } from './config.js';
+import { PORT, DATA_DIR, SINGBOX_BIN, REFRESH_MINUTES, MAX_OUTPUT, SUB_TOKEN, SUB_TITLE, SPEED_TEST, MIN_SPEED_KBPS, MAX_LATENCY_MS, MIN_STREAK } from './config.js';
 import { Store } from './store.js';
 import { Tester } from './test.js';
 import { Refresher } from './refresh.js';
@@ -17,6 +17,7 @@ function ranked() {
     .alive()
     .filter((n) => (n.latency || 9999) <= MAX_LATENCY_MS)
     .filter((n) => !SPEED_TEST || (n.speed || 0) >= MIN_SPEED_KBPS)
+    .filter((n) => (n.streak || 0) >= MIN_STREAK)
     .sort(
       (a, b) =>
         Number(!!b.residential) - Number(!!a.residential) ||
@@ -115,7 +116,18 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log(`[free-proxy-sub] listening on :${PORT}`);
   const age = Date.now() - (store.state.updatedAt || 0);
   if (age > REFRESH_MINUTES * 60000) {
-    setTimeout(() => refresher.refresh().then((s) => console.log('[refresh]', JSON.stringify(s))).catch((e) => console.error('[refresh]', e.message)), 2000);
+    setTimeout(() => {
+      refresher
+        .refresh()
+        .then((s) => {
+          console.log('[refresh]', JSON.stringify(s));
+          setTimeout(
+            () => refresher.refresh().then((x) => console.log('[refresh]', JSON.stringify(x))).catch((e) => console.error('[refresh]', e.message)),
+            150000
+          );
+        })
+        .catch((e) => console.error('[refresh]', e.message));
+    }, 2000);
   }
   setInterval(() => refresher.refresh().then((s) => console.log('[refresh]', JSON.stringify(s))).catch((e) => console.error('[refresh]', e.message)), REFRESH_MINUTES * 60000);
 });

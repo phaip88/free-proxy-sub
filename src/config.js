@@ -16,8 +16,9 @@ export const TEST_TIMEOUT_MS = Math.max(2000, Number(env.TEST_TIMEOUT_MS || 8000
 export const SPEED_TEST = (env.SPEED_TEST || '1') !== '0';
 export const SPEED_LIMIT = Math.max(0, Number(env.SPEED_LIMIT || 40));
 export const MAX_OUTPUT = Math.max(1, Number(env.MAX_OUTPUT || 300));
-export const MIN_SPEED_KBPS = Number(env.MIN_SPEED_KBPS || 200);
-export const MAX_LATENCY_MS = Number(env.MAX_LATENCY_MS || 2500);
+export const MIN_SPEED_KBPS = Number(env.MIN_SPEED_KBPS || 800);
+export const MAX_LATENCY_MS = Number(env.MAX_LATENCY_MS || 1500);
+export const MIN_STREAK = Number(env.MIN_STREAK || 2);
 export const SUB_TOKEN = (env.SUB_TOKEN || '').trim();
 export const SUB_TITLE = (env.SUB_TITLE || 'FreeProxy Sub').trim();
 
